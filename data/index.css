@@ -1,0 +1,9 @@
+body {
+    background-color: greenyellow;
+}
+
+#toggle-btn {
+    font-size: 24px;
+    padding: 10px;
+    border-radius: 4px;
+}
