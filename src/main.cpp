@@ -3,6 +3,9 @@
 #include <SPIFFS.h>
 #include <ESPAsyncWebServer.h>
 
+// Global variables
+bool on = false;
+
 // WiFi config
 const char *ssid = "Rover";
 const char *password = "gogogogo";
@@ -13,37 +16,49 @@ IPAddress subnet(255, 255, 255, 0);
 // Web Server
 AsyncWebServer server(80);
 
-// void rootHandler() {
-//   String str = "";
-//   Serial.println("Got visitors!");
+void forward()
+{
+  Serial.println("FORWARD");
+  digitalWrite(GPIO_NUM_25, HIGH);
+  digitalWrite(GPIO_NUM_26, LOW);
 
-//   File file = SPIFFS.open("/index.html");
-//   if (!file) {
-//     Serial.println("Failed to open file");
-//     return;
-//   }
+  digitalWrite(GPIO_NUM_16, HIGH);
+  digitalWrite(GPIO_NUM_17, LOW);
+}
 
-//   while(file.available()){
-//     str = str + file.read();
-//   }
-//   file.close();
+void backward()
+{
+  Serial.println("BACKWARD");
+  digitalWrite(GPIO_NUM_25, LOW);
+  digitalWrite(GPIO_NUM_26, HIGH);
 
-//   server.send(200, "text/html", str);
-// }
+  digitalWrite(GPIO_NUM_16, LOW);
+  digitalWrite(GPIO_NUM_17, HIGH);
+}
 
-bool ledOn = false;
+void stop()
+{
+  Serial.println("STOP");
+  digitalWrite(GPIO_NUM_25, LOW);
+  digitalWrite(GPIO_NUM_26, LOW);
 
-void toggleLED(AsyncWebServerRequest *request) {
-  ledOn = !ledOn;
-  if (ledOn) {
+  digitalWrite(GPIO_NUM_16, LOW);
+  digitalWrite(GPIO_NUM_17, LOW);
+}
+
+void led()
+{
+  on = !on;
+  if (on)
+  {
     Serial.println("ON");
     digitalWrite(LED_BUILTIN, HIGH);
-  } else {
+  }
+  else
+  {
     Serial.println("OFF");
     digitalWrite(LED_BUILTIN, LOW);
   }
-
-  request->send(200);
 }
 
 void setup()
@@ -66,32 +81,36 @@ void setup()
 
   Serial.println(WiFi.status());
 
-  // server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-  //   request->send(SPIFFS, "/index.html", "text/html");
-  // });
+  server.on("/forward", HTTP_GET, [](AsyncWebServerRequest *request) {
+    forward();
+    request->send(200);
+  });
 
-  server.on("/toggle", HTTP_GET, toggleLED);
+  server.on("/backward", HTTP_GET, [](AsyncWebServerRequest *request) {
+    backward();
+    request->send(200);
+  });
+
+  server.on("/stop", HTTP_GET, [](AsyncWebServerRequest *request) {
+    stop();
+    request->send(200);
+  });
+
+  server.on("/led", HTTP_GET, [](AsyncWebServerRequest *request) {
+    led();
+    request->send(200);
+  });
+
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
 
   server.begin();
   Serial.println("Server started, I hope...");
 
-  // Diagnostics
-  // Serial.begin(9600);
-  // digitalWrite(LED_BUILTIN, HIGH);
-  // delay(200);
-  // digitalWrite(LED_BUILTIN, LOW);
-  // delay(200);
-  // digitalWrite(LED_BUILTIN, HIGH);
-  // delay(200);
-  // digitalWrite(LED_BUILTIN, LOW);
-  // delay(200);
-
-  // Serial.write("Starting up...");
-
-  // // Motor
-  // pinMode(3, OUTPUT);
-  // pinMode(4, OUTPUT);
+  // Motor
+  pinMode(GPIO_NUM_25, OUTPUT);
+  pinMode(GPIO_NUM_26, OUTPUT);
+  pinMode(GPIO_NUM_16, OUTPUT);
+  pinMode(GPIO_NUM_17, OUTPUT);
 
   // // On/Off
   // pinMode(0, INPUT_PULLUP);
@@ -99,7 +118,6 @@ void setup()
 
 void loop()
 {
-
   // digitalWrite(LED_BUILTIN, HIGH);
   // delay(200);
   // digitalWrite(LED_BUILTIN, LOW);
